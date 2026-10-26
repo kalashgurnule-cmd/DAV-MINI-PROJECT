@@ -1,0 +1,6 @@
+flask>=3.0
+sqlalchemy>=2.0
+pandas>=2.0
+numpy>=1.26
+faker>=25.0
+pytest>=8.0

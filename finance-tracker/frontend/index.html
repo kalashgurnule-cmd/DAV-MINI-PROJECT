@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Finance Shadow Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>" />
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">💌</span>
+      <div>
+        <h1>Personal Finance <span class="grad-text">Shadow Tracker</span></h1>
+        <p class="tagline">Your money, seen clearly — zombies, leaks, and all</p>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpi-strip">
+      <!-- KPI cards injected by ui.js -->
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab t-violet active" data-tab="overview">📊 Overview</button>
+    <button class="tab t-pink" data-tab="zombies">🧟 Zombies <span class="badge" id="zombie-badge">0</span></button>
+    <button class="tab t-orange" data-tab="inflation">📈 Inflation</button>
+    <button class="tab t-lime" data-tab="health">🧭 Health Score</button>
+    <button class="tab t-cyan" data-tab="ledger">🔍 Ledger</button>
+    <button class="tab t-yellow" data-tab="ingest">⬇ Ingest Data</button>
+  </nav>
+
+  <main>
+    <!-- --------- empty state: shown until the user ingests data ---------- -->
+    <section class="panel empty-hero" id="empty-hero">
+      <div class="hero-icon">📭</div>
+      <h2>No transactions loaded yet</h2>
+      <p class="hero-sub">This dashboard analyzes <b>your own data</b> — nothing is shown until you ingest it.</p>
+      <div class="steps">
+        <div class="step s-violet"><b>1</b><span>Open the <u>Ingest Data</u> tab</span></div>
+        <div class="step s-pink"><b>2</b><span>Paste bank SMS, upload an SMS dump (.txt / .xml), or a CSV</span></div>
+        <div class="step s-cyan"><b>3</b><span>Come back here — analytics build themselves</span></div>
+      </div>
+      <button class="btn primary big" onclick="switchTab('ingest')">⬇ Go to data ingestion</button>
+    </section>
+
+    <!-- ------------------------------------------------------- overview -->
+    <section class="panel hidden" id="panel-overview">
+      <div class="chart-grid">
+        <div class="card acc-cyan">
+          <div class="chart-head">
+            <h3>Income vs Expenses</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-monthly">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-monthly"></p>
+          <div class="chart-body" id="chart-monthly"></div>
+          <div class="chart-table hidden" id="tbl-chart-monthly"></div>
+        </div>
+        <div class="card acc-pink">
+          <div class="chart-head">
+            <h3>Spending Trend</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-trend">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-trend"></p>
+          <div class="chart-body" id="chart-trend"></div>
+          <div class="chart-table hidden" id="tbl-chart-trend"></div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card acc-orange">
+          <div class="chart-head">
+            <h3>Where This Month Went</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-donut">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-donut">Click a slice to open those transactions in the Ledger.</p>
+          <div class="chart-body" id="chart-donut"></div>
+          <div class="donut-legend" id="donut-legend"></div>
+          <div class="chart-table hidden" id="tbl-chart-donut"></div>
+        </div>
+        <div class="card acc-violet">
+          <div class="chart-head">
+            <h3>Category by Month</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-stack">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-stack">Top 6 categories + Other · click legend to toggle a series</p>
+          <div class="chart-body" id="chart-stack"></div>
+          <div class="chart-table hidden" id="tbl-chart-stack"></div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card acc-lime">
+          <div class="chart-head">
+            <h3>Daily Spending</h3>
+            <div class="chart-btns">
+              <button class="chip" data-drange="30">30d</button>
+              <button class="chip" data-drange="90">90d</button>
+              <button class="chip" data-drange="all">All</button>
+              <span class="chip-sep"></span>
+              <button class="chip" data-dmode="bars">Bars</button>
+              <button class="chip" data-dmode="heat">Heatmap</button>
+              <button class="chip" data-table="chart-daily">⊟ Table</button>
+            </div>
+          </div>
+          <p class="chart-note muted" id="note-daily">Days above 2× the daily average turn amber and are labelled</p>
+          <div class="chart-body" id="chart-daily"></div>
+          <div class="chart-table hidden" id="tbl-chart-daily"></div>
+        </div>
+        <div class="card acc-violet">
+          <div class="chart-head">
+            <h3>Cash-flow Waterfall</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-waterfall">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-waterfall"></p>
+          <div class="chart-body" id="chart-waterfall"></div>
+          <div class="chart-table hidden" id="tbl-chart-waterfall"></div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card acc-green">
+          <div class="chart-head">
+            <h3>Month-end Forecast</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-forecast">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-forecast">Dashed extension = current run-rate to month end</p>
+          <div class="chart-body" id="chart-forecast"></div>
+          <div class="chart-table hidden" id="tbl-chart-forecast"></div>
+        </div>
+        <div class="card acc-red">
+          <div class="chart-head">
+            <h3>Budget vs Actual</h3>
+            <div class="chart-btns"><button class="chip" data-table="chart-budget">⊟ Table</button></div>
+          </div>
+          <p class="chart-note muted" id="note-budget">Budget = median of your previous 3 months · marker line = budget</p>
+          <div class="chart-body" id="chart-budget"></div>
+          <div class="chart-table hidden" id="tbl-chart-budget"></div>
+        </div>
+      </div>
+
+      <div class="card acc-gold">
+        <div class="chart-head">
+          <h3>Top 10 Merchants</h3>
+          <div class="chart-btns"><button class="chip" data-table="chart-merchants">⊟ Table</button></div>
+        </div>
+        <p class="chart-note muted" id="note-merchants">Click a bar to open that merchant in the Ledger</p>
+        <div class="chart-body" id="chart-merchants"></div>
+        <div class="chart-table hidden" id="tbl-chart-merchants"></div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------- zombies -->
+    <section class="panel hidden" id="panel-zombies">
+      <div class="kpi-mini-grid" id="zombie-kpis"></div>
+      <div class="card acc-pink">
+        <h3>Recurring Payment Detector</h3>
+        <p class="muted">Evenly spaced debit pattern detected via inter-transaction interval analysis (median gap)</p>
+        <div id="zombie-table"></div>
+      </div>
+      <div class="card acc-orange">
+        <div class="chart-head">
+          <h3>Recurring Cost Visual</h3>
+          <div class="chart-btns">
+            <button class="chip active" data-vizfor="zombies" data-viz="bar">⎯ Bars</button>
+            <button class="chip" data-vizfor="zombies" data-viz="scatter">⁙ Scatter</button>
+            <button class="chip" data-vizfor="zombies" data-viz="pie">◕ Pie</button>
+          </div>
+        </div>
+        <p class="chart-note muted" id="note-zombiechart"></p>
+        <div class="chart-body" id="chart-zombies"></div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------ inflation -->
+    <section class="panel hidden" id="panel-inflation">
+      <div class="chart-grid">
+        <div class="card acc-orange">
+          <div class="chart-head">
+            <h3>Your Basket vs CPI</h3>
+            <div class="chart-btns">
+              <button class="chip active" data-vizfor="inflation" data-viz="lines">∿ Lines</button>
+              <button class="chip" data-vizfor="inflation" data-viz="pie">◕ Pie</button>
+              <button class="chip" data-vizfor="inflation" data-viz="trendbar">⎯ Trends</button>
+            </div>
+          </div>
+          <p class="chart-note muted" id="note-inflation"></p>
+          <div class="chart-body" id="chart-inflation"></div>
+        </div>
+        <div class="card acc-cyan"><h3>Estimated Annual Inflation</h3>
+          <p class="muted">Fitted 12-month log-linear trend on each index (3-month smoothed medians)</p>
+          <div class="yoy-row">
+            <div class="yoy-box you"><span id="yoy-personal">–</span><label>You</label></div>
+            <div class="yoy-box cpi"><span id="yoy-cpi">–</span><label>Govt CPI (illustrative)</label></div>
+          </div>
+          <p class="muted" id="yoy-verdict"></p>
+        </div>
+      </div>
+      <div class="card acc-yellow">
+        <h3>Category Price Moves (per year)</h3>
+        <div id="inflation-table"></div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- health -->
+    <section class="panel hidden" id="panel-health">
+      <div class="chart-grid">
+        <div class="card acc-lime"><h3>Your Score</h3>
+          <p class="chart-note muted" id="note-gauge"></p>
+          <div class="chart-body" id="chart-gauge"></div>
+        </div>
+        <div class="card acc-violet">
+          <div class="chart-head">
+            <h3>Component Breakdown</h3>
+            <div class="chart-btns">
+              <button class="chip active" data-vizfor="health" data-viz="table">⊟ Table</button>
+              <button class="chip" data-vizfor="health" data-viz="bar">⎯ Bars</button>
+            </div>
+          </div>
+          <p class="chart-note muted" id="note-healthviz"></p>
+          <div class="chart-body hidden" id="viz-health"></div>
+          <div id="health-table"></div>
+        </div>
+      </div>
+      <div class="card acc-cyan"><h3>Suggestions</h3><ul id="health-suggestions" class="suggestions"></ul></div>
+    </section>
+
+    <!-- --------------------------------------------------------- ledger -->
+    <section class="panel hidden" id="panel-ledger">
+      <div class="card acc-cyan">
+        <div class="toolbar">
+          <input type="search" id="ledger-search" placeholder="Search merchant / raw SMS…" />
+          <select id="ledger-month"><option value="">All months</option></select>
+          <select id="ledger-category"><option value="">All categories</option></select>
+          <select id="ledger-direction">
+            <option value="">All</option>
+            <option value="debit">Debits</option>
+            <option value="credit">Credits</option>
+          </select>
+          <button id="ledger-export" class="btn">⬇ Export CSV</button>
+          <span class="muted" id="ledger-count"></span>
+        </div>
+        <div class="viz-chips">
+          <span class="viz-label">View:</span>
+          <button class="chip active" data-vizfor="ledger" data-viz="table">⊟ Table</button>
+          <button class="chip" data-vizfor="ledger" data-viz="bar">⎯ Bar</button>
+          <button class="chip" data-vizfor="ledger" data-viz="pie">◕ Pie</button>
+          <button class="chip" data-vizfor="ledger" data-viz="scatter">⁙ Scatter</button>
+        </div>
+        <p class="chart-note muted" id="note-ledgerviz"></p>
+        <div class="chart-body hidden" id="viz-ledger"></div>
+        <div id="ledger-table"></div>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- ingest -->
+    <section class="panel hidden" id="panel-ingest">
+      <div class="chart-grid">
+        <div class="card acc-pink">
+          <h3 class="step-tag">1 · SMS</h3>
+          <p class="muted">Paste bank SMS text — one SMS per line (dirty formats welcome — that's the parser's job).
+            Too many to paste? Upload your exported dump file below — we auto-detect the format:
+            Android <b>SMS Backup &amp; Restore XML</b>, <b>.txt</b> dumps (one-per-line or blank-line blocks),
+            <b>CSV / TSV</b> spreadsheets (with a body/message column), <b>JSON</b> exports, <b>ZIP</b>
+            archives of any of these, or an Android <b>mmssms.db / .sqlite</b> SMS database.
+            OTPs and promos are auto-skipped.</p>
+          <textarea id="sms-input" rows="7" placeholder="Rs.499 debited from HDFC a/c XX4521 on 12-Mar-25 towards NETFLIX.COM. Ref 554212"></textarea>
+          <div class="toolbar">
+            <button id="sms-submit" class="btn primary">Parse &amp; Store Text</button>
+            <input type="file" id="sms-file" accept=".txt,.xml,.csv,.tsv,.json,.zip,.db,.sqlite,.sqlite3,.log,.dat,.md" />
+            <button id="sms-file-submit" class="btn primary">Upload SMS File</button>
+          </div>
+          <pre id="sms-report" class="mono"></pre>
+        </div>
+        <div class="card acc-cyan">
+          <h3 class="step-tag">2 · CSV</h3>
+          <p class="muted">Required columns: <code>date, direction, amount, merchant</code>
+            (optional: <code>balance</code>). Dates day-first.
+            Build this in Excel from your passbook and save as .csv.</p>
+          <input type="file" id="csv-file" accept=".csv" />
+          <button id="csv-submit" class="btn primary">Upload &amp; Store</button>
+          <pre id="csv-report" class="mono"></pre>
+        </div>
+      </div>
+      <div class="card acc-red">
+        <h3 class="step-tag">3 · Demo dataset &amp; cleanup</h3>
+        <p class="muted">"Demo dataset" loads a synthetic example bank SMS feed (for the viva).
+          "Clear all data" wipes stored transactions — useful before ingesting your own files.</p>
+        <div class="toolbar">
+          <button id="reset-btn" class="btn violet">✨ Load demo dataset</button>
+          <button id="clear-btn" class="btn danger">🧹 Clear all stored data</button>
+        </div>
+        <pre id="reset-report" class="mono"></pre>
+      </div>
+      <div class="card acc-gold">
+        <div class="chart-head">
+          <h3>Last Ingest — Parse Funnel</h3>
+          <div class="chart-btns">
+            <button class="chip active" data-vizfor="ingest" data-viz="table">⊟ Table</button>
+            <button class="chip" data-vizfor="ingest" data-viz="bar">⎯ Bars</button>
+          </div>
+        </div>
+        <p class="chart-note muted" id="note-ingestviz"></p>
+        <div id="ingest-viz-table"></div>
+        <div class="chart-body hidden" id="viz-ingest"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
